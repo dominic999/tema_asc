@@ -18,24 +18,11 @@
 
 inserare_zerouri:
 	cmp $1024, %ecx
-	jge xor_ecx#schimba cu primire_comanda
+	jge primire_comanda
 	movw $0, (%edi, %ecx, 1)
 	inc %ecx
 	jmp inserare_zerouri
 
-xor_ecx:
-	mov $0, %ecx
-
-afisare_test:
-	cmp $10, %ecx
-	je et_exit
-	push %ecx
-	push (%edi, %ecx)
-	push $test
-	call printf
-	add $8, %esp
-	pop %ecx
-	jmp afisare_test
 
 primire_comanda:
 	push $cerere_comanda
@@ -140,14 +127,11 @@ continuare:
 	inc %ecx
 	jmp continuare
 
+#afisam intervalul unde am inserat 
 afisare_inserare:
+	xor %ecx, %ecx
 	push stop_spatiu
 	push start_spatiu
-	push $afisare_bloc
-	call printf
-	add $12, %esp
-	push 0(%edi)
-	push 1(%edi)
 	push $afisare_bloc
 	call printf
 	add $12, %esp
