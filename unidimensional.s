@@ -1,12 +1,12 @@
 .data
 	test :.asciz "%d\n"
 	drive :.space 1024
-	nume_comanda :.space 1
+	nume_comanda :.space 4
 	#cer comanda
 	cerere_comanda :.asciz "Comanda(1-add, 2-del 3-defragmentare)\n" 
 	citire :.asciz "%ld" 
 	fisier :.asciz "ID fisier:\n" 	
-	id_fisier :.space 1
+	id_fisier :.space 4
 	cerere_dimensiune :.asciz "Care este dimensiunea?\n"
 	dimensiune_fisier :.space 4
 	start_spatiu :.long 0
@@ -146,7 +146,7 @@ stergere:
 	xor %ecx, %ecx
 	mov id_fisier, %eax
 continuare_stergere:
-	cmp (%edi, %ecx), %eax
+	cmpb (%edi, %ecx), %al
 	je setare_interval
 	inc %ecx
 	jmp continuare_stergere
@@ -158,7 +158,7 @@ setare_interval:
 
 #caut finalul
 cautare_final_interval:
-	cmp (%edi, %ecx), %eax
+	cmpb (%edi, %ecx), %al
 	jne am_gasit_final
 	movb $0, (%edi, %ecx)
 	inc %ecx
