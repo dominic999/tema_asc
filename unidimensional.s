@@ -36,10 +36,10 @@ primire_comanda:
 	jmp verificare_comanda
 
 verificare_comanda:
-	mov 0(%esp), %eax
-	cmp $1, %eax
-	je citire_id_fisier
-	jmp et_exit
+	mov nume_comanda, %eax
+	cmp $3, %eax
+	je et_exit
+	jmp citire_id_fisier	
 
 
 citire_id_fisier:
@@ -50,7 +50,12 @@ citire_id_fisier:
 	push $citire
 	call scanf
 	add $8, %esp
+	cmp $1, %eax
+	je citire_dimensiune_fisier
+	cmp $2, %eax
+	je stergere
 
+#adaugam fisier
 citire_dimensiune_fisier:
 	push $cerere_dimensiune
 	call printf
@@ -108,8 +113,6 @@ seteaza_start:
 	movl %ecx, start_spatiu
 	jmp revenire
 		
-
-
 nu_am_gasit_zero:
 	mov $0, %ebx
 	inc %ecx
@@ -136,6 +139,33 @@ afisare_inserare:
 	call printf
 	add $12, %esp
 	jmp primire_comanda
+
+#stergem element, idul este in eax
+stergere:
+	xor %ecx, %ecx
+	mov id_fisier, %eax
+continuare_stergere:
+	cmp (%edi, %ecx), %eax
+	je setare_interval
+	inc %ecx
+	jmp continuare_stergere
+
+#setez inceputul intervalului
+setare_interval:
+	mov %ecx, start_spatiu
+	
+
+#caut finalul
+cautare_final_interval:
+	cmp (%edi, %ecx), %eax
+	jne am_gasit_final
+	movw $0, (%edi, %ecx)
+	inc %ecx
+
+am_gasit_final:
+	mov %ecx, stop_spatiu
+	jmp afisare_inserare
+
 
 main:
 	lea drive, %edi
