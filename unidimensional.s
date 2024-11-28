@@ -19,7 +19,7 @@
 inserare_zerouri:
 	cmp $1024, %ecx
 	jge primire_comanda
-	movw $0, (%edi, %ecx, 1)
+	movb $0, (%edi, %ecx, 1)
 	inc %ecx
 	jmp inserare_zerouri
 
@@ -32,7 +32,6 @@ primire_comanda:
 	push $citire
 	call scanf
 	add $8, %esp
-	push nume_comanda
 	jmp verificare_comanda
 
 verificare_comanda:
@@ -43,6 +42,7 @@ verificare_comanda:
 
 
 citire_id_fisier:
+	push %eax
 	push $fisier 
 	call printf
 	add $4, %esp	
@@ -50,6 +50,7 @@ citire_id_fisier:
 	push $citire
 	call scanf
 	add $8, %esp
+	pop %eax
 	cmp $1, %eax
 	je citire_dimensiune_fisier
 	cmp $2, %eax
@@ -119,14 +120,14 @@ nu_am_gasit_zero:
 	jmp cautare_spatiu
 
 am_gasit_spatiu:
-	mov id_fisier, %eax
+	movb id_fisier, %al
 	dec %ecx
 	movl %ecx, stop_spatiu
 	mov start_spatiu, %ecx
 continuare: 
 	cmp stop_spatiu, %ecx
 	jg afisare_inserare
-	movw $10, (%edi, %ecx)
+	movb %al, (%edi, %ecx)
 	inc %ecx
 	jmp continuare
 
@@ -145,25 +146,27 @@ stergere:
 	xor %ecx, %ecx
 	mov id_fisier, %eax
 continuare_stergere:
-	cmp (%edi, %ecx), %eax
+	cmpb (%edi, %ecx), %al
 	je setare_interval
 	inc %ecx
 	jmp continuare_stergere
 
 #setez inceputul intervalului
 setare_interval:
-	mov %ecx, start_spatiu
+	movl %ecx, start_spatiu
 	
 
 #caut finalul
 cautare_final_interval:
-	cmp (%edi, %ecx), %eax
+	cmpb (%edi, %ecx), %al
 	jne am_gasit_final
-	movw $0, (%edi, %ecx)
+	movb $0, (%edi, %ecx)
 	inc %ecx
+	jmp cautare_final_interval
 
 am_gasit_final:
-	mov %ecx, stop_spatiu
+	dec %ecx
+	movl %ecx, stop_spatiu
 	jmp afisare_inserare
 
 
