@@ -162,8 +162,10 @@ cautare_final_interval:
 	jne am_gasit_final
 	movb $0, (%edi, %ecx)
 	inc %ecx
+	jmp cautare_final_interval
 
 am_gasit_final:
+	dec %ecx
 	movl %ecx, stop_spatiu
 	jmp afisare_inserare
 
