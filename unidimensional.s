@@ -49,7 +49,6 @@ citire_id_fisier:
 	push $id_fisier
 	push $citire
 	call scanf
-test2:
 	add $8, %esp
 	pop %eax
 	cmp $1, %eax
