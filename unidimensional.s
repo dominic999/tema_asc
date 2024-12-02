@@ -1,6 +1,5 @@
 .data
-	bite :.byte 0
-	afisam_byte :.asciz "%b\n"
+	afisam_byte :.asciz "%d\n"
 	test :.asciz "%d\n"
 	drive :.space 1024
 	nume_comanda :.space 4
@@ -203,8 +202,8 @@ am_gasit_primul_zero:
 
 cautam_primul_id:
 	cmp $1024, %ecx
-	je et_exit
-	cmp (%edi, %ecx), %eax
+	je et_afisare_lista
+	cmpb (%edi, %ecx), %al
 	jne am_gasit_primul_id
 	inc %ecx
 	jmp cautam_primul_id
@@ -219,10 +218,12 @@ et_switch:
 	mov $0, %eax
 	mov primul_id, %ecx
 	movb %al, (%edi, %ecx)
+	jmp et_defragmentare
 
 et_afisare_lista:
 	mov $0, %ecx
 	mov $0, %eax
+	mov $0, %edx
 cont_lista:
 	cmpb (%edi, %ecx), %al
 	je et_exit
@@ -235,6 +236,7 @@ cont_lista:
 	add $8, %esp
 	pop %eax
  	pop %ecx
+	inc %ecx
 	jmp cont_lista
 
 
