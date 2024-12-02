@@ -86,19 +86,19 @@ rest_mare:
 rest_zero:
 	mov %eax, dimensiune_fisier
 	xor %ecx, %ecx
-	xor %ebx, %ebx
+	mov $0, %ebx
 	jmp cautare_spatiu
 
 et_adaugare_fisier:
-	cmp dimensiune_fisier, %ebx
-	je am_gasit_spatiu#schimba numele, inseamna ca am gasit loc
-	jl cautare_spatiu #inseamna ca inca cautam spatiu
 	cmp $1024, %ecx
 	je et_exit #schimba numele, inseamna ca nu am gasit loc in tot driveul
-	
+	cmp dimensiune_fisier, %ebx
+	je am_gasit_spatiu
+	jl cautare_spatiu #inseamna ca inca cautam spatiu
+
 cautare_spatiu:
-	mov (%edi, %ecx, 1), %eax
-	cmp $0, %eax
+	movb (%edi, %ecx, 1), %al
+	cmp $0, %al
 	je am_gasit_zero
 	jg nu_am_gasit_zero
 
