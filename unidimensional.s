@@ -3,7 +3,7 @@
 	drive :.space 1024
 	nume_comanda :.space 4
 	#cer comanda
-	cerere_comanda :.asciz "Comanda(1-add, 2-del 3-defragmentare)\n" 
+	cerere_comanda :.asciz "Comanda(1-add, 2-del 3-get)\n" 
 	citire :.asciz "%ld" 
 	fisier :.asciz "ID fisier:\n" 	
 	id_fisier :.space 4
@@ -36,7 +36,7 @@ primire_comanda:
 
 verificare_comanda:
 	mov nume_comanda, %eax
-	cmp $3, %eax
+	cmp $4, %eax
 	je et_exit
 	jmp citire_id_fisier	
 
@@ -54,7 +54,9 @@ citire_id_fisier:
 	cmp $1, %eax
 	je citire_dimensiune_fisier
 	cmp $2, %eax
-	je stergere
+	je cautare_inceput_interval
+	cmp $3, %eax
+	je cautare_inceput_interval
 
 #adaugam fisier
 citire_dimensiune_fisier:
@@ -141,28 +143,37 @@ afisare_inserare:
 	add $12, %esp
 	jmp primire_comanda
 
-#stergem element, idul este in eax
-stergere:
+#cautam iceputul intervlului
+cautare_inceput_interval:
 	xor %ecx, %ecx
 	mov id_fisier, %eax
-continuare_stergere:
+continuare_cautare_inceput:
 	cmpb (%edi, %ecx), %al
 	je setare_interval
 	inc %ecx
-	jmp continuare_stergere
+	jmp continuare_cautare_inceput
 
 #setez inceputul intervalului
 setare_interval:
 	movl %ecx, start_spatiu
-	
+	mov nume_comanda, %edx
+	cmp $2, %edx
+	je cautare_final_interval_de_sters
+	jg cautare_final_interval_de_returnat
 
 #caut finalul
-cautare_final_interval:
+cautare_final_interval_de_sters:
 	cmpb (%edi, %ecx), %al
 	jne am_gasit_final
 	movb $0, (%edi, %ecx)
 	inc %ecx
-	jmp cautare_final_interval
+	jmp cautare_final_interval_de_sters
+
+cautare_final_interval_de_returnat:
+	cmpb (%edi, %ecx), %al
+	jne am_gasit_final
+	inc %ecx
+	jmp cautare_final_interval_de_returnat
 
 am_gasit_final:
 	dec %ecx
