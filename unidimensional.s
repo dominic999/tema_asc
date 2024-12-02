@@ -1,9 +1,11 @@
 .data
+	bite :.byte 0
+	afisam_byte :.asciz "%b\n"
 	test :.asciz "%d\n"
 	drive :.space 1024
 	nume_comanda :.space 4
 	#cer comanda
-	cerere_comanda :.asciz "Comanda(1-add, 2-del 3-get)\n" 
+	cerere_comanda :.asciz "Comanda(1-add, 2-del 3-get 4-defragmentare 5-quit)\n" 
 	citire :.asciz "%ld" 
 	fisier :.asciz "ID fisier:\n" 	
 	id_fisier :.space 4
@@ -12,6 +14,8 @@
 	start_spatiu :.long 0
 	stop_spatiu :.long 0
 	afisare_bloc :.asciz "Intervaul: (%d,%d)\n"
+	primul_zero :.long 0
+	primul_id :.long 0
 	
 .text
 .global main
@@ -36,8 +40,10 @@ primire_comanda:
 
 verificare_comanda:
 	mov nume_comanda, %eax
-	cmp $4, %eax
+	cmp $5, %eax
 	je et_exit
+	cmp $4, %eax 
+	je et_defragmentare
 	jmp citire_id_fisier	
 
 
@@ -179,6 +185,57 @@ am_gasit_final:
 	dec %ecx
 	movl %ecx, stop_spatiu
 	jmp afisare_inserare
+
+et_defragmentare:
+	mov primul_zero, %ecx
+	mov $0, %eax
+continuare_defragmentare:
+	cmp $1024, %ecx
+	je et_afisare_lista	
+	cmpb (%edi, %ecx), %al
+	je am_gasit_primul_zero
+	inc %ecx
+	jmp continuare_defragmentare 
+
+am_gasit_primul_zero:
+	mov %ecx, primul_zero
+	inc %ecx	
+
+cautam_primul_id:
+	cmp $1024, %ecx
+	je et_exit
+	cmp (%edi, %ecx), %eax
+	jne am_gasit_primul_id
+	inc %ecx
+	jmp cautam_primul_id
+
+am_gasit_primul_id:
+	mov %ecx, primul_id
+	
+et_switch:
+	movb (%edi, %ecx), %al
+	mov primul_zero, %ecx
+	movb %al, (%edi, %ecx)
+	mov $0, %eax
+	mov primul_id, %ecx
+	movb %al, (%edi, %ecx)
+
+et_afisare_lista:
+	mov $0, %ecx
+	mov $0, %eax
+cont_lista:
+	cmpb (%edi, %ecx), %al
+	je et_exit
+	movb (%edi, %ecx), %dl
+	push %ecx
+	push %eax
+	push %edx
+	push $afisam_byte
+	call printf
+	add $8, %esp
+	pop %eax
+ 	pop %ecx
+	jmp cont_lista
 
 
 main:
