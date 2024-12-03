@@ -1,0 +1,289 @@
+.data                                                                                            
+  1     adduri_executate :.long 1
+  2     nr_add :.space 4
+  3     ultimul_id :.byte 0
+  4     afisam_byte :.asciz "%d\n"
+  5     test :.asciz "%d\n"
+  6     drive :.space 1024
+  7     nume_comanda :.space 4
+  8     #cer comanda
+  9     numar_comenzi :.space 4
+ 10     comenzi_executate :.long 0
+ 11     citire :.asciz "%ld" 
+ 12     fisier :.asciz "ID fisier:\n"   
+ 13     id_fisier :.space 4
+ 14     cerere_dimensiune :.asciz "Care este dimensiunea?\n"
+ 15     dimensiune_fisier :.space 4
+ 16     start_spatiu :.long 0
+ 17     stop_spatiu :.long 0
+ 18     afisare_bloc :.asciz "Intervaul: (%d,%d)\n"
+ 19     primul_zero :.long 0
+ 20     primul_id :.long 0
+ 21     
+ 22 .text
+ 23 .global main
+ 24 
+ 25 inserare_zerouri:
+ 26     cmp $1024, %ecx
+ 27     jge primire_comanda
+ 28     movb $0, (%edi, %ecx, 1)
+ 29     inc %ecx
+ 30     jmp inserare_zerouri
+ 31 
+ 32 
+ 33 primire_comanda:
+ 34     movl comenzi_executate, %ecx
+ 35     cmpl numar_comenzi, %ecx
+ 36     je et_exit
+ 37     inc %ecx
+ 38     movl %ecx, comenzi_executate
+ 39     push $nume_comanda
+ 40     push $citire
+ 41     call scanf
+ 42     add $8, %esp
+ 43     jmp verificare_comanda
+ 44 
+ 45 verificare_comanda:
+ 46     mov nume_comanda, %eax
+ 47     cmp $5, %eax
+ 48     je et_exit
+ 49     cmp $4, %eax 
+ 50     je et_defragmentare
+ 51     cmp $1, %eax
+ 52     je add_initial
+                                                                                   1,1           Top
+     jmp citire_id_fisier    
+ 48 
+ 47 
+ 46 citire_id_fisier:
+ 45     push $id_fisier
+ 44     push $citire
+ 43     call scanf
+ 42     add $8, %esp
+ 41     cmp $1, %eax
+ 40     je citire_dimensiune_fisier
+ 39     cmp $2, %eax
+ 38     je cautare_inceput_interval
+ 37     cmp $3, %eax
+ 36     je cautare_inceput_interval
+ 35 
+ 34 
+ 33 #aici am citit cate adduri se vor face
+ 32 add_initial:
+ 31     push $nr_add
+ 30     push $citire
+ 29     call scanf 
+ 28     add $8 ,%esp
+ 27     jmp citire_id_fisier
+ 26 
+ 25 verificare_add:
+ 24     mov adduri_executate, %ecx
+ 23     cmp nr_add, %ecx
+ 22     je primire_comanda
+ 21     inc %ecx
+ 20     mov %ecx, adduri_executate
+ 19     jmp citire_id_fisier
+ 18     
+ 17 
+ 16 #adaugam fisier
+ 15 #citim care este id-ul fisierului
+ 14 citire_dimensiune_fisier:
+ 13 #aici am citit cate adduri se vor face si este in nr_add
+ 12     push $dimensiune_fisier
+ 11     push $citire
+ 10     call scanf
+  9     add $8, %esp
+  8 
+  7 #calculam de cate blocuri este nevoie   
+  6 calculare_blocuri:
+  5     xor %edx, %edx
+  4     mov dimensiune_fisier, %eax
+  3     mov $8, %ebx
+  2     div %ebx
+  1     cmp $0, %edx
+103     jg rest_mare    
+5     je rest_zero
+  4 
+  3 rest_mare:
+  2     add $1, %eax
+  1     mov %eax, dimensiune_fisier
+109     xor %ecx, %ecx                                                                               
+  1     xor %ebx, %ebx
+  2     jmp cautare_spatiu
+  3 
+  4 rest_zero:
+  5     mov %eax, dimensiune_fisier
+  6     xor %ecx, %ecx
+  7     mov $0, %ebx
+  8     jmp cautare_spatiu
+  9 
+ 10 et_adaugare_fisier:
+ 11     cmp $1024, %ecx
+ 12     je et_exit #schimba numele, inseamna ca nu am gasit loc in tot driveul
+ 13     cmp dimensiune_fisier, %ebx
+ 14     je am_gasit_spatiu
+ 15     jl cautare_spatiu #inseamna ca inca cautam spatiu
+ 16 
+ 17 cautare_spatiu:
+ 18     movb (%edi, %ecx, 1), %al
+ 19     cmp $0, %al
+ 20     je am_gasit_zero
+ 21     jg nu_am_gasit_zero
+ 22 
+ 23 am_gasit_zero:
+ 24     cmp $0, %ebx
+ 25     je seteaza_start
+ 26 revenire:
+ 27     inc %ebx
+ 28     inc %ecx
+ 29     jmp et_adaugare_fisier
+ 30 
+ 31 seteaza_start:
+ 32     movl %ecx, start_spatiu
+ 33     jmp revenire
+ 34         u_am_gasit_zero:
+  6     mov $0, %ebx
+  7     inc %ecx
+  8     jmp cautare_spatiu
+  9 
+ 10 am_gasit_spatiu:
+ 11     movb id_fisier, %al
+ 12     dec %ecx
+ 13     movl %ecx, stop_spatiu
+ 14     mov start_spatiu, %ecx
+ 15 continuare: 
+ 16     cmp stop_spatiu, %ecx
+ 17     jg afisare_inserare
+ 18     movb %al, (%edi, %ecx)
+ 19     inc %ecx
+ 20     jmp continuare
+ 21 
+ 22 #afisam intervalul unde am inserat 
+ 23 afisare_inserare:
+ 24     xor %ecx, %ecx
+ 25     push stop_spatiu
+ 26     push start_spatiu
+ 27     push $afisare_bloc
+ 28     call printf
+ 29     add $12, %esp
+ 30     movl nume_comanda, %eax
+ 31     cmpl $1, %eax
+ 32     je verificare_add
+ 33     jmp primire_comanda
+ 34     
+ 35 
+ 36 #cautam iceputul intervlului
+ 37 cautare_inceput_interval:
+ 38     xor %ecx, %ecx
+ 39     mov id_fisier, %eax
+ 40 continuare_cautare_inceput:
+ 41     cmpb (%edi, %ecx), %al
+ 42     je setare_interval
+ 43     inc %ecx
+ 44     jmp continuare_cautare_inceput
+ 45 
+ 46 #setez inceputul intervalului
+ 47 setare_interval:
+ 48     movl %ecx, start_spatiu
+ 49     mov nume_comanda, %edx
+ 50     cmp $2, %edx
+ 51     je cautare_final_interval_de_sters
+ 52     jg cautare_final_interval_de_returnat
+                                                                                   139,0-1       60%
+
+ #setez inceputul intervalului
+ 49 setare_interval:
+ 48     movl %ecx, start_spatiu
+ 47     mov nume_comanda, %edx
+ 46     cmp $2, %edx
+ 45     je cautare_final_interval_de_sters
+ 44     jg cautare_final_interval_de_returnat
+ 43 
+ 42 #caut finalul
+ 41 cautare_final_interval_de_sters:
+ 40     cmpb (%edi, %ecx), %al
+ 39     jne am_gasit_final
+ 38     movb $0, (%edi, %ecx)
+ 37     inc %ecx
+ 36     jmp cautare_final_interval_de_sters
+ 35 
+ 34 cautare_final_interval_de_returnat:
+ 33     cmpb (%edi, %ecx), %al
+ 32     jne am_gasit_final
+ 31     inc %ecx
+ 30     jmp cautare_final_interval_de_returnat
+ 29 
+ 28 am_gasit_final:
+ 27     dec %ecx
+ 26     movl %ecx, stop_spatiu
+ 25     jmp afisare_inserare
+ 24 
+ 23 et_defragmentare:
+ 22     mov primul_zero, %ecx
+ 21     mov $0, %eax
+ 20 continuare_defragmentare:
+ 19     cmp $1024, %ecx
+ 18     je et_afisare_lista 
+ 17     cmpb (%edi, %ecx), %al
+ 16     je am_gasit_primul_zero
+ 15     inc %ecx
+ 14     jmp continuare_defragmentare 
+ 13 
+ 12 am_gasit_primul_zero:
+ 11     mov %ecx, primul_zero
+ 10     inc %ecx    
+  9 
+  8 cautam_primul_id:
+  7     cmp $1024, %ecx
+  6     je et_afisare_lista
+  5     cmpb (%edi, %ecx), %al
+  4     jne am_gasit_primul_id
+  3     inc %ecx
+  2     jmp cautam_primul_id
+  1 
+235 am_gasit_primul_id:          
+                                                                                   109,1-4       39%
+et_switch:
+ 35     movb (%edi, %ecx), %al
+ 34     mov primul_zero, %ecx
+ 33     movb %al, (%edi, %ecx)
+ 32     mov $0, %eax
+ 31     mov primul_id, %ecx
+ 30     movb %al, (%edi, %ecx)
+ 29     jmp et_defragmentare
+ 28 
+ 27 et_afisare_lista:
+ 26     mov $0, %ecx
+ 25     mov $0, %eax
+ 24     mov $0, %edx
+ 23 cont_lista:
+ 22     cmpb (%edi, %ecx), %al
+ 21     je primire_comanda
+ 20     movb (%edi, %ecx), %dl
+ 19     push %ecx
+ 18     push %eax
+ 17     push %edx
+ 16     push $afisam_byte
+ 15     call printf
+ 14     add $8, %esp
+ 13     pop %eax
+ 12     pop %ecx
+ 11     inc %ecx
+ 10     jmp cont_lista
+  9 
+  8 
+  7 main:
+  6     push $numar_comenzi
+  5     push $citire
+  4     call scanf
+  3     add $8, %esp
+  2     lea drive, %edi
+  1     xor %ecx, %ecx
+274     jmp inserare_zerouri                                                                         
+  1 
+  2 et_exit:
+  3     mov $1, %eax
+  4     mov $0, %ebx
+  5     int $0x80
+
+

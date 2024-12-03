@@ -51,7 +51,8 @@
      je et_defragmentare
      cmp $1, %eax
      je add_initial
-     jmp citire_id_fisier    
+                                                                                 1,1           Top
+   jmp citire_id_fisier    
  
  
  citire_id_fisier:
