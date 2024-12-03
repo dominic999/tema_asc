@@ -55,12 +55,10 @@
  
  
  citire_id_fisier:
-	 push %eax
      push $id_fisier
      push $citire
      call scanf
      add $8, %esp
-	 pop %eax
      cmp $1, %eax
      je citire_dimensiune_fisier
      cmp $2, %eax
@@ -142,8 +140,7 @@
  seteaza_start:
      movl %ecx, start_spatiu
      jmp revenire
-
- nu_am_gasit_zero:
+         u_am_gasit_zero:
      mov $0, %ebx
      inc %ecx
      jmp cautare_spatiu
@@ -192,6 +189,14 @@
      je cautare_final_interval_de_sters
      jg cautare_final_interval_de_returnat
 
+#setez inceputul intervalului
+ setare_interval:
+     movl %ecx, start_spatiu
+     mov nume_comanda, %edx
+     cmp $2, %edx
+     je cautare_final_interval_de_sters
+     jg cautare_final_interval_de_returnat
+ 
  #caut finalul
  cautare_final_interval_de_sters:
      cmpb (%edi, %ecx), %al
@@ -235,7 +240,6 @@
      jmp cautam_primul_id
  
 am_gasit_primul_id:          
-	mov %ecx, primul_id
 et_switch:
      movb (%edi, %ecx), %al
      mov primul_zero, %ecx
