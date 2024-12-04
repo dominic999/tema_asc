@@ -249,7 +249,7 @@ afisare:
 
 verific_get:
 	mov nume_comanda, %eax
-	cmp $3, %eax
+	cmp $2, %eax
 	je afisare_00
 	jmp afisare_memorie
  
@@ -257,7 +257,7 @@ verific_get:
  setare_interval:
      movl %ecx, start_spatiu
      mov nume_comanda, %edx
-     cmp $2, %edx
+     cmp $3, %edx
      je cautare_final_interval_de_sters
      jg cautare_final_interval_de_returnat
 
@@ -279,7 +279,7 @@ verific_get:
      dec %ecx
      movl %ecx, stop_spatiu
 	 mov nume_comanda, %eax
-	 cmpl  $3, %eax
+	 cmpl  $2, %eax
 	 je afisare_inserare
 	 jmp reset_ecx
  
