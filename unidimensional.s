@@ -259,7 +259,7 @@ verific_get:
      mov nume_comanda, %edx
      cmp $3, %edx
      je cautare_final_interval_de_sters
-     jg cautare_final_interval_de_returnat
+     jl cautare_final_interval_de_returnat
 
  #caut finalul
  cautare_final_interval_de_sters:
