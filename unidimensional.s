@@ -18,6 +18,7 @@
      afisare_bloc :.asciz "%d: (%d,%d)\n"
      primul_zero :.long 0
      primul_id :.long 0
+	 afisare_get: .asciz "(%d,%d)\n"
      
  .text
  .global main
@@ -29,6 +30,16 @@
      inc %ecx
      jmp inserare_zerouri
  
+afisare_00:
+	xor %eax, %eax
+	push %eax
+	push %eax
+	push $afisare_get
+	call printf
+	add $8, %esp
+	jmp primire_comanda
+
+
  
  primire_comanda:
      movl comenzi_executate, %ecx
@@ -87,7 +98,7 @@
      
 resetare_adduri:
 	movl $1, adduri_executate
-	jmp primire_comanda
+	jmp reset_ecx
  
  #adaugam fisier
  #citim care este id-ul fisierului
@@ -132,7 +143,7 @@ resetare_adduri:
      movb (%edi, %ecx, 1), %al
      cmp $0, %al
      je am_gasit_zero
-     jg nu_am_gasit_zero
+     jne nu_am_gasit_zero
  
  am_gasit_zero:
      cmp $0, %ebx
@@ -158,7 +169,7 @@ resetare_adduri:
      mov start_spatiu, %ecx
  continuare: 
      cmp stop_spatiu, %ecx
-     jg reset_ecx
+     jg verificare_add
      movb %al, (%edi, %ecx)
      inc %ecx
      jmp continuare
@@ -168,10 +179,9 @@ resetare_adduri:
      xor %ecx, %ecx
      push stop_spatiu
      push start_spatiu
-	 push id_fisier
-     push $afisare_bloc
+     push $afisare_get
      call printf
-     add $16, %esp
+     add $12, %esp
      movl nume_comanda, %eax
      cmpl $1, %eax
      je verificare_add
@@ -184,9 +194,9 @@ reset_ecx:
 #afisam fiecare fisier
 afisare_memorie:
 	cmp $1024, %ecx
-	je verificare_eax
-	mov $0, %eax
-	cmpb (%edi, %ecx), %al
+	je primire_comanda
+	mov $0, %eax 
+	cmpb (%edi, %ecx), %al 
 	jne setare_inceput_afisare
 	inc %ecx
 	jmp afisare_memorie
@@ -230,10 +240,18 @@ afisare:
      xor %ecx, %ecx
      mov id_fisier, %eax
  continuare_cautare_inceput:
+   	 cmp $1024, %ecx
+	 je verific_get
      cmpb (%edi, %ecx), %al
      je setare_interval
      inc %ecx
      jmp continuare_cautare_inceput
+
+verific_get:
+	mov nume_comanda, %eax
+	cmp $3, %eax
+	je afisare_00
+	jmp afisare_memorie
  
  #setez inceputul intervalului
  setare_interval:
