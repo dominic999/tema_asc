@@ -4,7 +4,7 @@
      ultimul_id :.byte 0
      afisam_byte :.asciz "%d\n"
      test :.asciz "%d\n"
-     drive :.space 1024
+     drive :.space 1000
      nume_comanda :.space 4
      #cer comanda
      numar_comenzi :.space 4
@@ -24,7 +24,7 @@
  .global main
  
  inserare_zerouri:
-     cmp $1024, %ecx
+     cmp $1000, %ecx
      jge primire_comanda
      movb $0, (%edi, %ecx, 1)
      inc %ecx
@@ -37,8 +37,19 @@ afisare_00:
 	push $afisare_get
 	call printf
 	add $8, %esp
+	mov nume_comanda, %eax
+	cmp $1,  %eax
+	je verificare_add
 	jmp primire_comanda
 
+afisare_add:
+	push stop_spatiu
+	push start_spatiu
+	push id_fisier
+	push $afisare_bloc
+	call printf
+	add $16, %esp
+	jmp verificare_add
 
  
  primire_comanda:
@@ -98,9 +109,8 @@ afisare_00:
      
 resetare_adduri:
 	movl $1, adduri_executate
-	jmp reset_ecx
+	jmp primire_comanda
  
- #adaugam fisier
  #citim care este id-ul fisierului
  citire_dimensiune_fisier:
  #aici am citit cate adduri se vor face si este in nr_add
@@ -133,8 +143,8 @@ resetare_adduri:
      jmp cautare_spatiu
  
  et_adaugare_fisier:
-     cmp $1024, %ecx
-     je et_exit #schimba numele, inseamna ca nu am gasit loc in tot driveul
+     cmp $1000, %ecx
+     je afisare_00
      cmp dimensiune_fisier, %ebx
      je am_gasit_spatiu
      jl cautare_spatiu #inseamna ca inca cautam spatiu
@@ -169,7 +179,7 @@ resetare_adduri:
      mov start_spatiu, %ecx
  continuare: 
      cmp stop_spatiu, %ecx
-     jg verificare_add
+     jg afisare_add
      movb %al, (%edi, %ecx)
      inc %ecx
      jmp continuare
@@ -193,7 +203,7 @@ reset_ecx:
 
 #afisam fiecare fisier
 afisare_memorie:
-	cmp $1024, %ecx
+	cmp $1000, %ecx
 	je primire_comanda
 	mov $0, %eax 
 	cmpb (%edi, %ecx), %al 
@@ -240,7 +250,7 @@ afisare:
      xor %ecx, %ecx
      mov id_fisier, %eax
  continuare_cautare_inceput:
-   	 cmp $1024, %ecx
+   	 cmp $1000, %ecx
 	 je verific_get
      cmpb (%edi, %ecx), %al
      je setare_interval
@@ -287,7 +297,7 @@ verific_get:
      mov primul_zero, %ecx
      mov $0, %eax
  continuare_defragmentare:
-     cmp $1024, %ecx
+     cmp $1000, %ecx
      je resetare_primul_zero
      cmpb (%edi, %ecx), %al
      je am_gasit_primul_zero
@@ -303,7 +313,7 @@ resetare_primul_zero:
      inc %ecx    
  
  cautam_primul_id:
-     cmp $1024, %ecx
+     cmp $1000, %ecx
      je resetare_primul_zero
      cmpb (%edi, %ecx), %al
      jne am_gasit_primul_id
