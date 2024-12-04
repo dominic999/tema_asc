@@ -10,13 +10,12 @@
      numar_comenzi :.space 4
      comenzi_executate :.long 0
      citire :.asciz "%ld" 
-     fisier :.asciz "ID fisier:\n"   
      id_fisier :.space 4
      cerere_dimensiune :.asciz "Care este dimensiunea?\n"
      dimensiune_fisier :.space 4
      start_spatiu :.long 0
      stop_spatiu :.long 0
-     afisare_bloc :.asciz "Intervaul: (%d,%d)\n"
+     afisare_bloc :.asciz "%d: (%d,%d)\n"
      primul_zero :.long 0
      primul_id :.long 0
      
@@ -55,6 +54,7 @@
  
  
  citire_id_fisier:
+	 mov nume_comanda, %eax
 	 push %eax
      push $id_fisier
      push $citire
@@ -80,11 +80,14 @@
  verificare_add:
      mov adduri_executate, %ecx
      cmp nr_add, %ecx
-     je primire_comanda
+     je resetare_adduri
      inc %ecx
      mov %ecx, adduri_executate
      jmp citire_id_fisier
      
+resetare_adduri:
+	movl $1, adduri_executate
+	jmp primire_comanda
  
  #adaugam fisier
  #citim care este id-ul fisierului
@@ -149,13 +152,13 @@
      jmp cautare_spatiu
  
  am_gasit_spatiu:
-     movb id_fisier, %al
+     mov id_fisier, %eax
      dec %ecx
      movl %ecx, stop_spatiu
      mov start_spatiu, %ecx
  continuare: 
      cmp stop_spatiu, %ecx
-     jg afisare_inserare
+     jg reset_ecx
      movb %al, (%edi, %ecx)
      inc %ecx
      jmp continuare
@@ -165,15 +168,63 @@
      xor %ecx, %ecx
      push stop_spatiu
      push start_spatiu
+	 push id_fisier
      push $afisare_bloc
      call printf
-     add $12, %esp
+     add $16, %esp
      movl nume_comanda, %eax
      cmpl $1, %eax
      je verificare_add
      jmp primire_comanda
      
- 
+reset_ecx:
+	mov $0, %ecx
+	jmp afisare_memorie
+
+#afisam fiecare fisier
+afisare_memorie:
+	cmp $1024, %ecx
+	je verificare_eax
+	mov $0, %eax
+	cmpb (%edi, %ecx), %al
+	jne setare_inceput_afisare
+	inc %ecx
+	jmp afisare_memorie
+
+verificare_eax:
+	mov nume_comanda, %eax
+	cmp $1, %eax
+	je verificare_add
+	jmp primire_comanda
+
+setare_inceput_afisare:
+	mov %ecx, start_spatiu
+	mov $0, %eax
+	movb (%edi, %ecx), %al
+	mov %eax, id_fisier
+
+afisare_efectiva:
+	mov id_fisier, %eax
+	cmpb (%edi, %ecx), %al
+	jne afisare
+	inc %ecx
+	jmp afisare_efectiva
+
+afisare:
+	dec %ecx
+	mov %ecx, stop_spatiu
+	push stop_spatiu
+	push start_spatiu
+	push id_fisier
+	push $afisare_bloc
+	call printf
+	add $16, %esp
+	mov stop_spatiu, %ecx
+	inc %ecx
+	jmp afisare_memorie
+	
+	
+#aici incepe stergerea si getul
  #cautam iceputul intervlului
  cautare_inceput_interval:
      xor %ecx, %ecx
@@ -209,18 +260,25 @@
  am_gasit_final:
      dec %ecx
      movl %ecx, stop_spatiu
-     jmp afisare_inserare
+	 mov nume_comanda, %eax
+	 cmpl  $3, %eax
+	 je afisare_inserare
+	 jmp reset_ecx
  
  et_defragmentare:
      mov primul_zero, %ecx
      mov $0, %eax
  continuare_defragmentare:
      cmp $1024, %ecx
-     je et_afisare_lista 
+     je resetare_primul_zero
      cmpb (%edi, %ecx), %al
      je am_gasit_primul_zero
      inc %ecx
      jmp continuare_defragmentare 
+
+resetare_primul_zero:
+	movl $0, primul_zero
+	jmp reset_ecx
  
  am_gasit_primul_zero:
      mov %ecx, primul_zero
@@ -228,7 +286,7 @@
  
  cautam_primul_id:
      cmp $1024, %ecx
-     je et_afisare_lista
+     je resetare_primul_zero
      cmpb (%edi, %ecx), %al
      jne am_gasit_primul_id
      inc %ecx
