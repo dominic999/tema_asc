@@ -358,7 +358,7 @@ et_switch:
      add $8, %esp
      lea drive, %edi
      xor %ecx, %ecx
-   jmp inserare_zerouri                                                                         
+     jmp inserare_zerouri                                                                         
  
  et_exit:
      mov $1, %eax
