@@ -1,6 +1,4 @@
 .data
-	afisareEroare :.asciz "((%ld, %ld), (%ld, %ld))\n"
-	afisareInterval :.asciz "%ld: ((%ld, %ld), (%ld, %ld))\n"
 	startX :.long 0
 	startY : .long 0
 	stopX :.long 0
@@ -11,21 +9,23 @@
 	comandaDel :.long 3
 	comandaGet :.long 2
 	comandaDef :.long 4
-	dimensiuneLinie :.long 1000
+	dimensiuneLinie :.long 1024
 	linieActuala :.long 0
 	coloanaActuala :.long 0
-	formatCitire :.asciz "%ld" 
-	driver :.space 1000000
 	numarComenzi :.space 4
 	numeComanda :.space 4
 	comenziExecutate :.long 0
-	dimensiuneDriver :.long 1000000
+	dimensiuneDriver :.long 1048576
 	numarAdduri :.space 4
 	adduriExecutate :.long 0
 	startSpatiu :.long 0
 	stopSpatiu :.long 0
 	counter :.long 0
-
+	driver :.space 1048576
+	afisareGet :.asciz "((%ld, %ld), (%ld, %ld))\n"
+	afisareEroare :.asciz "((%ld, %ld), (%ld, %ld))\n"
+	afisareInterval :.asciz "%ld: ((%ld, %ld), (%ld, %ld))\n"
+	formatCitire :.asciz "%ld" 
 .text
 .global main
 
@@ -88,9 +88,53 @@ afisare_eroare:
 	push %eax
 	push $afisareEroare
 	call printf
-	add $16, %esp
+	add $20, %esp
 	ret
 
+
+afisare_bloc:
+	mov startSpatiu, %eax
+	mov $0, %edx
+	divl dimensiuneLinie
+	movl %eax, startX
+	movl %edx, startY
+	movl stopSpatiu, %eax
+	movl $0, %edx
+	divl dimensiuneLinie
+	mov %eax, stopX
+	mov %edx, stopY
+	push stopY
+	push stopX
+	push startY
+	push startX
+	push idFisier
+	push $afisareInterval
+	call printf
+	add $24, %esp
+	ret
+
+
+#primul argument este startul, iar al doilea este stopul
+afisare_get:
+	mov startSpatiu, %eax
+	mov $0, %edx
+	divl dimensiuneLinie
+	mov %eax, startX
+	mov %edx, startY
+	mov stopSpatiu, %eax
+	mov $0, %edx
+	divl dimensiuneLinie
+	mov %eax, stopX
+	mov %edx, stopY
+	push stopY
+	push stopX
+	push startY
+	push startX
+	push $afisareGet
+	call printf
+	add $20, %esp
+	ret
+	
 
 main:
 	lea driver, %edi
@@ -114,6 +158,7 @@ inserare_zerouri:
 
 
 verificare_numar_comenzi:
+	movl $0, numarAdduri
 	mov comenziExecutate, %ecx
 	cmp numarComenzi, %ecx
 	je et_exit
@@ -137,7 +182,7 @@ verific_comanda:
 	cmp comandaDel, %eax
 	je et_del 
 	cmp comandaGet, %eax
-	je et_exit #schima cu et_get
+	je et_get
 
 
 
@@ -146,24 +191,30 @@ et_add:
 	push $numarAdduri
 	push $formatCitire
 	call scanf 
+test1:
 	add $8, %esp
+	movl $0, adduriExecutate
 	jmp check_add
 
 #aici verific daca mai am addiri de facut
 check_add:
 	mov adduriExecutate, %ecx
+	cmp $0, %ecx
+	jg afis_add
+cont_check:
 	cmp numarAdduri, %ecx
-	je afis_add
-	cmp linieActuala, %eax
+	je verificare_numar_comenzi
 	inc %ecx
 	mov %ecx, adduriExecutate
 	jmp citire_id_add
 
 afis_add:
 	push %ecx
-	call afisare
+	call afisare_bloc
 	pop %ecx
-	jmp verificare_numar_comenzi
+	jmp cont_check
+	
+
 
 citire_id_add:
 	push $idFisier
@@ -265,4 +316,62 @@ error:
 	push %ecx
 	call afisare_eroare
 	pop %ecx
+	mov numeComanda, %eax
+	cmp comandaGet, %eax
+	je verificare_numar_comenzi
 	jmp check_add
+
+
+et_del:
+et_get:
+	#vom citi id-ul si vom cauta incetutul intervalului
+	push $idFisier
+	push $formatCitire
+	call scanf
+	add $8, %esp
+	mov $0, %ecx
+	jmp cautare_inceput_interval_get_si_del
+	
+cautare_inceput_interval_get_si_del:
+	cmp dimensiuneDriver, %ecx
+	je error 
+	mov idFisier, %eax
+	cmpb (%edi, %ecx), %al
+	je am_gasit_id_get_si_del
+	inc %ecx
+	jmp cautare_inceput_interval_get_si_del
+	
+am_gasit_id_get_si_del:
+	mov %ecx, startSpatiu
+	mov numeComanda, %eax
+ 	cmp comandaDel, %eax
+	je stergere
+	jmp gasire
+
+#aici executam efectiv stergerea
+stergere:	
+	mov idFisier, %eax
+	cmpb (%edi, %ecx), %al
+	jne finalizare_del
+	mov $0, %eax
+	movb %al, (%edi, %ecx)	
+	inc %ecx
+	jmp stergere
+
+finalizare_del:
+	call afisare
+	jmp verificare_numar_comenzi
+
+#aici executam gasirea fisierului
+gasire:
+	mov idFisier, %eax
+	cmpb (%edi, %ecx), %al
+	jne finalizare_gasire
+	inc %ecx
+	jmp gasire
+finalizare_gasire:
+	dec %ecx
+	mov %ecx, stopSpatiu
+ 	call afisare_get
+	jmp verificare_numar_comenzi
+	

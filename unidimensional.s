@@ -4,7 +4,7 @@
      ultimul_id :.byte 0
      afisam_byte :.asciz "%d\n"
      test :.asciz "%d\n"
-     drive :.space 1000
+     drive :.space 1024
      nume_comanda :.space 4
      #cer comanda
      numar_comenzi :.space 4
@@ -15,16 +15,16 @@
      dimensiune_fisier :.space 4
      start_spatiu :.long 0
      stop_spatiu :.long 0
-     afisare_bloc :.asciz "%d: (%d,%d)\n"
+     afisare_bloc :.asciz "%d: (%d, %d)\n"
      primul_zero :.long 0
      primul_id :.long 0
-	 afisare_get: .asciz "(%d,%d)\n"
+	 afisare_get: .asciz "(%d, %d)\n"
      
  .text
  .global main
  
  inserare_zerouri:
-     cmp $1000, %ecx
+     cmp $1024, %ecx
      jge primire_comanda
      movb $0, (%edi, %ecx, 1)
      inc %ecx
@@ -37,6 +37,9 @@ afisare_00:
 	push $afisare_get
 	call printf
 	add $8, %esp
+	push $0
+    call fflush
+	add $4, %esp
 	mov nume_comanda, %eax
 	cmp $1,  %eax
 	je verificare_add
@@ -49,6 +52,9 @@ afisare_add:
 	push $afisare_bloc
 	call printf
 	add $16, %esp
+	push $0
+    call fflush
+	add $4, %esp
 	jmp verificare_add
 
  
@@ -143,17 +149,25 @@ resetare_adduri:
      jmp cautare_spatiu
  
  et_adaugare_fisier:
-     cmp $1000, %ecx
-     je afisare_00
+     cmp $1024, %ecx
+	 je verificam_daca_este_spatiu#afisare_00
      cmp dimensiune_fisier, %ebx
      je am_gasit_spatiu
      jl cautare_spatiu #inseamna ca inca cautam spatiu
+
  
  cautare_spatiu:
+	 cmp $1024, %ecx
+	 je verificam_daca_este_spatiu#afisare_00
      movb (%edi, %ecx, 1), %al
      cmp $0, %al
      je am_gasit_zero
      jne nu_am_gasit_zero
+
+verificam_daca_este_spatiu:
+	cmp dimensiune_fisier, %ebx
+	je am_gasit_spatiu
+	jmp afisare_00
  
  am_gasit_zero:
      cmp $0, %ebx
@@ -174,6 +188,9 @@ resetare_adduri:
  
  am_gasit_spatiu:
      mov id_fisier, %eax
+	 cmp $4, %eax
+	 je testare
+cont_testare: 
      dec %ecx
      movl %ecx, stop_spatiu
      mov start_spatiu, %ecx
@@ -183,6 +200,9 @@ resetare_adduri:
      movb %al, (%edi, %ecx)
      inc %ecx
      jmp continuare
+
+testare:
+	jmp cont_testare
  
  #afisam intervalul unde am inserat 
  afisare_inserare:
@@ -192,6 +212,9 @@ resetare_adduri:
      push $afisare_get
      call printf
      add $12, %esp
+	 push $0
+	 call fflush
+	 add $4, %esp
      movl nume_comanda, %eax
      cmpl $1, %eax
      je verificare_add
@@ -203,7 +226,7 @@ reset_ecx:
 
 #afisam fiecare fisier
 afisare_memorie:
-	cmp $1000, %ecx
+	cmp $1024, %ecx
 	je primire_comanda
 	mov $0, %eax 
 	cmpb (%edi, %ecx), %al 
@@ -233,24 +256,31 @@ afisare_efectiva:
 afisare:
 	dec %ecx
 	mov %ecx, stop_spatiu
+	cmp $1024, %ecx
+	je test_afisare_memorie
+rev_afis_memorie:
 	push stop_spatiu
 	push start_spatiu
 	push id_fisier
 	push $afisare_bloc
 	call printf
 	add $16, %esp
+	push $0
+    call fflush
+	add $4, %esp
 	mov stop_spatiu, %ecx
 	inc %ecx
 	jmp afisare_memorie
 	
-	
+test_afisare_memorie:
+	jmp rev_afis_memorie
 #aici incepe stergerea si getul
  #cautam iceputul intervlului
  cautare_inceput_interval:
      xor %ecx, %ecx
      mov id_fisier, %eax
  continuare_cautare_inceput:
-   	 cmp $1000, %ecx
+   	 cmp $1024, %ecx
 	 je verific_get
      cmpb (%edi, %ecx), %al
      je setare_interval
@@ -261,7 +291,8 @@ verific_get:
 	mov nume_comanda, %eax
 	cmp $2, %eax
 	je afisare_00
-	jmp afisare_memorie
+	jmp reset_ecx
+
  
  #setez inceputul intervalului
  setare_interval:
@@ -297,7 +328,7 @@ verific_get:
      mov primul_zero, %ecx
      mov $0, %eax
  continuare_defragmentare:
-     cmp $1000, %ecx
+     cmp $1024, %ecx
      je resetare_primul_zero
      cmpb (%edi, %ecx), %al
      je am_gasit_primul_zero
@@ -313,7 +344,7 @@ resetare_primul_zero:
      inc %ecx    
  
  cautam_primul_id:
-     cmp $1000, %ecx
+     cmp $1024, %ecx
      je resetare_primul_zero
      cmpb (%edi, %ecx), %al
      jne am_gasit_primul_id
@@ -345,6 +376,9 @@ et_switch:
      push $afisam_byte
      call printf
      add $8, %esp
+	 push $0
+     call fflush
+	 add $4, %esp
      pop %eax
      pop %ecx
      inc %ecx
@@ -361,6 +395,9 @@ et_switch:
      jmp inserare_zerouri                                                                         
  
  et_exit:
+	 push $0
+     call fflush
+	 add $4, %esp
      mov $1, %eax
      mov $0, %ebx
      int $0x80
