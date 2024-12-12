@@ -1,4 +1,10 @@
 .data
+	startZero :.long 0
+	stopZero :.long 0
+	startId :.long 0
+	stopId :.long 0
+	counterZero :.long 0
+	counterId :.long 0
 	startX :.long 0
 	startY : .long 0
 	stopX :.long 0
@@ -28,6 +34,19 @@
 	formatCitire :.asciz "%ld" 
 .text
 .global main
+
+
+
+swap:
+     mov idFisier, %eax
+     mov startZero, %ecx
+     movb %al, (%edi, %ecx)
+     mov $0, %eax
+     mov startId, %ecx
+     movb %al, (%edi, %ecx)
+     ret
+
+
 
 afisare:
 	mov $0, %ecx
@@ -79,6 +98,9 @@ am_gasit_final_interval:
 	jmp continuare_afisare
 finalizare_afisare:
 	ret
+
+
+
 
 afisare_eroare:
 	mov $0, %eax
@@ -183,7 +205,8 @@ verific_comanda:
 	je et_del 
 	cmp comandaGet, %eax
 	je et_get
-
+	cmp comandaDef, %eax
+	je et_def
 
 
 et_add:
@@ -191,7 +214,6 @@ et_add:
 	push $numarAdduri
 	push $formatCitire
 	call scanf 
-test1:
 	add $8, %esp
 	movl $0, adduriExecutate
 	jmp check_add
@@ -373,5 +395,110 @@ finalizare_gasire:
 	dec %ecx
 	mov %ecx, stopSpatiu
  	call afisare_get
+	jmp verificare_numar_comenzi
+	
+
+et_def:
+	#prima oara cautam un zero, apoi cand gasit numaram cati de 0 sunt pana gasim urmatorul id
+	mov $0, %ecx
+	movl $0, linieActuala
+	movl $0, %eax
+	movl $0, counterZero
+	movl $0, counterId
+continuare_defrag:
+	mov %ecx, %eax
+	mov $0, %edx
+	divl dimensiuneLinie
+	mov %eax, linieActuala
+	mov $0, %eax
+	cmp dimensiuneDriver, %ecx
+	je final_defrag
+	cmpb (%edi, %ecx), %al
+	je zero_defrag
+	inc %ecx
+	jmp continuare_defrag
+zero_defrag:
+	mov %ecx, startZero
+	addl $1, counterZero
+	jmp cautare_id_defrag
+cautare_id_defrag:
+	#aici vrem sa cautam un id, iar cat timp nu gasim sa incrementm counterZero
+	cmp dimensiuneDriver, %ecx
+	je final_defrag
+	cmpb (%edi, %ecx), %al
+	jne id_defrag
+	inc %ecx
+	addl $1, counterZero
+	jmp cautare_id_defrag
+id_defrag:
+	movb (%edi, %ecx), %al
+	mov %eax, idFisier
+	mov %ecx, startId
+	#aici vom avea doua variante: daca suntem pe aceeasi linie pe care am gasit zeroul, schibmam direct, daca nu  verificam daca are loc
+	#in plus, daca nu are loc vreau sa sar peste toata portiunea aceea de zero si sa trec la urmatoarea
+	mov %ecx, %eax
+	mov $0, %edx
+	divl dimensiuneLinie
+	cmp linieActuala, %eax
+	je aceeasi_linie
+	jmp linie_diferita
+aceeasi_linie:
+	push %ecx
+	call swap
+	pop %ecx
+	mov startZero, %ecx
+	inc %ecx
+	movl $0, counterZero
+	jmp continuare_defrag
+linie_diferita:
+	#asta inseamna ca am gasit fisierul pe o alta linie si vreau sa ma asigur ca are spatiu pe linia precedenta
+	#daca nu are continui cautarea de zerouri de la locul unde se termina idul si schimb limia actuala	
+	#trebuie la final sa resetez counterul si pentru zero si pentru id
+	mov %ecx, %eax
+	mov $0, %edx
+	divl dimensiuneLinie
+	mov %eax, linieActuala
+	mov idFisier, %eax
+	cmpb (%edi, %ecx), %al
+	jne final_fisier_defrag
+	inc %ecx
+	addl $1, counterId
+	jmp linie_diferita
+final_fisier_defrag:
+	dec %ecx
+	mov %ecx, stopId
+	mov counterId, %eax
+	cmp counterZero, %eax
+	jg nu_este_loc
+	mov startZero, %ecx
+	mov $0, %eax
+	jmp este_loc
+nu_este_loc:
+	#aici resetam counterele si continuam cautarea dupa finalul id-ului
+	inc %ecx
+	movl $0, counterZero
+	movl $0, counterId	
+	jmp continuare_defrag
+este_loc:	
+	cmp counterId, %eax
+	je final_de_swap_intre_linii
+	mov idFisier, %ebx
+	mov startZero, %edx
+	movb %bl, (%edi, %edx)
+	mov $0, %ebx
+	mov startId, %edx
+	movb %bl, (%edi, %edx)
+	addl $1, startZero
+	addl $1, startId
+	inc %eax
+	jmp este_loc
+final_de_swap_intre_linii:
+	mov startId, %ecx
+	sub counterId, %ecx
+	movl $0, counterZero
+	movl $0, counterId
+	jmp continuare_defrag
+final_defrag:
+	call afisare
 	jmp verificare_numar_comenzi
 	
