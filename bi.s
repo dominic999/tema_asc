@@ -1,7 +1,4 @@
 .data
-	afisareGet :.asciz "((%ld, %ld), (%ld, %ld))\n"
-	afisareEroare :.asciz "((%ld, %ld), (%ld, %ld))\n"
-	afisareInterval :.asciz "%ld: ((%ld, %ld), (%ld, %ld))\n"
 	startX :.long 0
 	startY : .long 0
 	stopX :.long 0
@@ -12,21 +9,23 @@
 	comandaDel :.long 3
 	comandaGet :.long 2
 	comandaDef :.long 4
-	dimensiuneLinie :.long 1000
+	dimensiuneLinie :.long 1024
 	linieActuala :.long 0
 	coloanaActuala :.long 0
-	formatCitire :.asciz "%ld" 
-	driver :.space 1000000
 	numarComenzi :.space 4
 	numeComanda :.space 4
 	comenziExecutate :.long 0
-	dimensiuneDriver :.long 1000000
-	numarAdduri :.long 0
+	dimensiuneDriver :.long 1048576
+	numarAdduri :.space 4
 	adduriExecutate :.long 0
 	startSpatiu :.long 0
 	stopSpatiu :.long 0
 	counter :.long 0
-
+	driver :.space 1048576
+	afisareGet :.asciz "((%ld, %ld), (%ld, %ld))\n"
+	afisareEroare :.asciz "((%ld, %ld), (%ld, %ld))\n"
+	afisareInterval :.asciz "%ld: ((%ld, %ld), (%ld, %ld))\n"
+	formatCitire :.asciz "%ld" 
 .text
 .global main
 
@@ -89,8 +88,31 @@ afisare_eroare:
 	push %eax
 	push $afisareEroare
 	call printf
-	add $16, %esp
+	add $20, %esp
 	ret
+
+
+afisare_bloc:
+	mov startSpatiu, %eax
+	mov $0, %edx
+	divl dimensiuneLinie
+	movl %eax, startX
+	movl %edx, startY
+	movl stopSpatiu, %eax
+	movl $0, %edx
+	divl dimensiuneLinie
+	mov %eax, stopX
+	mov %edx, stopY
+	push stopY
+	push stopX
+	push startY
+	push startX
+	push idFisier
+	push $afisareInterval
+	call printf
+	add $24, %esp
+	ret
+
 
 #primul argument este startul, iar al doilea este stopul
 afisare_get:
@@ -136,6 +158,7 @@ inserare_zerouri:
 
 
 verificare_numar_comenzi:
+	movl $0, numarAdduri
 	mov comenziExecutate, %ecx
 	cmp numarComenzi, %ecx
 	je et_exit
@@ -170,23 +193,28 @@ et_add:
 	call scanf 
 test1:
 	add $8, %esp
+	movl $0, adduriExecutate
 	jmp check_add
 
 #aici verific daca mai am addiri de facut
 check_add:
 	mov adduriExecutate, %ecx
+	cmp $0, %ecx
+	jg afis_add
+cont_check:
 	cmp numarAdduri, %ecx
-	je afis_add
-	cmp linieActuala, %eax
+	je verificare_numar_comenzi
 	inc %ecx
 	mov %ecx, adduriExecutate
 	jmp citire_id_add
 
 afis_add:
 	push %ecx
-	call afisare
+	call afisare_bloc
 	pop %ecx
-	jmp verificare_numar_comenzi
+	jmp cont_check
+	
+
 
 citire_id_add:
 	push $idFisier
@@ -305,7 +333,7 @@ et_get:
 	jmp cautare_inceput_interval_get_si_del
 	
 cautare_inceput_interval_get_si_del:
-	cmp $dimensiuneDriver, %ecx
+	cmp dimensiuneDriver, %ecx
 	je error 
 	mov idFisier, %eax
 	cmpb (%edi, %ecx), %al
