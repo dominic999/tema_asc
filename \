@@ -1,0 +1,40 @@
+.data
+	descriptor :.long 0
+	file :.long 0
+	entry :.long 0
+	director :.long 0
+	path :.asciz "/home/tirdeadominic/Documents/fisiere_test"
+	text :.asciz "%ld\n"
+.text
+.global main
+main:
+	lea path, %edi
+	push %edi
+	call opendir
+	add $4, %esp
+	mov %eax, director
+	push director
+	push $text
+	call printf
+	add $8, %esp
+citire:
+	push director
+	call readdir
+	add $4, %esp
+	mov %eax, entry
+	mov $5, %eax
+	mov entry, %ebx
+	mov $0, %ecx
+	int $0x80
+	mov %eax. descriptor
+	push descriptor
+	push $text
+	call printf
+	add $8, %esp
+	cmpl $0, entry
+	je et_exit
+	jmp citire
+et_exit:
+	mov $1, %eax
+	mov $0, %ebx
+	int $0x80

@@ -1,4 +1,6 @@
 .data
+	director :.long 0
+	descriptor :.long 0
 	startZero :.long 0
 	stopZero :.long 0
 	startId :.long 0
@@ -15,6 +17,7 @@
 	comandaDel :.long 3
 	comandaGet :.long 2
 	comandaDef :.long 4
+	comandaConc :.long 5
 	dimensiuneLinie :.long 1024
 	linieActuala :.long 0
 	coloanaActuala :.long 0
@@ -22,16 +25,24 @@
 	numeComanda :.space 4
 	comenziExecutate :.long 0
 	dimensiuneDriver :.long 1048576
+	vectorFrecventa :.space 256
 	numarAdduri :.space 4
 	adduriExecutate :.long 0
 	startSpatiu :.long 0
 	stopSpatiu :.long 0
 	counter :.long 0
 	driver :.space 1048576
+	filePath :.space 1024
+	statBuffer :.space 1024
 	afisareGet :.asciz "((%ld, %ld), (%ld, %ld))\n"
 	afisareEroare :.asciz "((%ld, %ld), (%ld, %ld))\n"
 	afisareInterval :.asciz "%ld: ((%ld, %ld), (%ld, %ld))\n"
 	formatCitire :.asciz "%ld" 
+	path :.asciz "/home/tirdeadominic/Documents/fisiere_test/"
+	dot :.asciz "."
+	dotDot :.asciz ".."
+	afisTest :.asciz "%s\n"
+	afisTest2 :.asciz "%ld\n"
 .text
 .global main
 
@@ -157,13 +168,27 @@ afisare_get:
 	add $20, %esp
 	ret
 	
+setare_vector_frecventa:
+	cmp $256, %ecx
+	je res_ecx
+	mov $0, %eax
+	movb %al, (%edi, %ecx)
+	inc %ecx
+	jmp setare_vector_frecventa
+
+res_ecx:
+	mov $0, %ecx
+	lea driver, %edi
+	jmp inserare_zerouri
 
 main:
-	lea driver, %edi
+	lea vectorFrecventa, %edi
 	push $numarComenzi
 	push $formatCitire
 	call scanf
 	add $8, %esp
+	mov $0, %ecx
+	jmp setare_vector_frecventa
 	jmp inserare_zerouri
 
 et_exit:
@@ -207,7 +232,8 @@ verific_comanda:
 	je et_get
 	cmp comandaDef, %eax
 	je et_def
-
+	cmp comandaConc, %eax
+	je et_concrete
 
 et_add:
 #verific cate adduri am de facut
@@ -317,9 +343,18 @@ inceput_interval:
 comparare_dimensiune:
 	mov counter, %eax
 	cmp dimensiuneFisier, %eax
-	je am_gasit_spatiu
+	je marire_frecventa#am_gasit_spatiu
 	inc %ecx
 	jmp cautare_zero
+
+marire_frecventa:
+	push %ecx
+	mov idFisier, %ecx
+	dec %ecx
+	mov $1, %eax
+	movb %al, (%edi, %ecx)
+	pop %ecx
+	jmp am_gasit_spatiu
 
 am_gasit_spatiu:
 	#aici vrem sa punem id-ul in spatiul gasit
@@ -328,12 +363,23 @@ am_gasit_spatiu:
 	mov idFisier, %eax
 cont_am_gasit_spatiu:
 	cmp stopSpatiu, %ecx
-	jg check_add
+	jg verificare_concrete#check_add
 	mov idFisier, %eax
 	movb %al, (%edi, %ecx)
 	inc %ecx
 	jmp cont_am_gasit_spatiu
 	
+verificare_concrete:
+	mov numeComanda, %eax
+	cmp comandaConc ,%eax
+	je afis_concrete#cont_cautare_fisiere
+	jmp check_add
+
+afis_concrete:
+	call afisare_bloc
+	jmp cont_cautare_fisiere
+
+
 error:
 	push %ecx
 	call afisare_eroare
@@ -502,3 +548,94 @@ final_defrag:
 	call afisare
 	jmp verificare_numar_comenzi
 	
+
+et_concrete:
+	lea path, %edi
+	push %edi
+	call opendir
+	mov %eax, director
+	add $4, %esp
+	push $path
+	push $filePath
+	call strcpy
+	add $8, %esp
+	jmp citire_fisiere_din_foldere
+
+citire_fisiere_din_foldere:
+	push director
+	call readdir
+	cmp $0, %eax
+	je finalizare_concrete
+	mov %eax, %edx
+	add $11, %edx
+	#aici ma asigur ca nu este fisierul dot sau dot dot
+	push $dot
+	push %edx
+	call strcmp 
+	add $8, %esp
+	cmp $0, %eax
+	je citire_fisiere_din_foldere
+	push $dotDot
+	push %edx
+	call strcmp
+	add $8, %esp
+	cmp $0, %eax
+	je citire_fisiere_din_foldere
+	#aici concatenez numee fisierul cu pathul folderului
+	push %edx
+	push $filePath
+	call strcat
+	add $8, %esp
+	#aici fac open
+	mov $5, %eax
+	mov $filePath, %ebx
+	mov $0, %ecx
+	int $0x80	
+	#aici aflu memoria
+	mov %eax, descriptor
+	mov $108, %eax
+	mov descriptor, %ebx
+	lea statBuffer, %ecx
+	int $0x80
+	lea statBuffer, %edx
+	movl 20(%edx), %eax
+	#acum in %edx am dimensiunea fisierului
+	movl %eax, dimensiuneFisier
+	#acum aflu id-ul
+	mov descriptor, %eax
+	mov $0, %edx
+	mov $256, %ebx
+	divl %ebx
+	mov %edx, idFisier
+	jmp verificare_frecventa
+	#aici refac pathul pentru urmatorele fisiere
+cont_cautare_fisiere:
+	push $path
+	push $filePath
+	call strcpy
+	add $8, %esp
+	jmp citire_fisiere_din_foldere
+	
+	
+
+verificare_frecventa:
+	mov idFisier, %ecx
+	mov $0, %eax
+	lea vectorFrecventa, %ebx
+	cmpb (%ebx, %ecx), %al
+	je nu_exista_fisierul
+	jmp fisierul_exista_deja
+
+fisierul_exista_deja:
+	push %ecx
+	call afisare_eroare
+	pop %ecx
+	jmp cont_cautare_fisiere
+
+nu_exista_fisierul:
+	lea driver, %edi
+	jmp formatare_dimensiune
+
+finalizare_concrete:
+	lea driver, %edi
+	jmp verificare_numar_comenzi
