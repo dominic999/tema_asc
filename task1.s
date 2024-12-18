@@ -49,9 +49,6 @@ afisare_get:
 	push $textGetSiEroare
 	call printf
 	add $12, %esp
-	push $0
-	call fflush
-	add $4, %esp
 	ret
 
 
@@ -59,12 +56,11 @@ afisare_eroare:
 	mov $0, %eax
 	push %eax
 	push %eax
-	push $textGetSiEroare
+	mov idFisier, %eax
+	push %eax
+	push $formatAfisare
 	call printf
-	add $12, %esp
-	push $0
-	call fflush
-	add $4, %esp
+	add $16, %esp
 	ret
 
 #argumentul o sa fie 0 ca sa inceapa cautarea de la 0 si daca la final raspuns este 0 inseamna ca nu am gasit fisier
@@ -129,14 +125,14 @@ afisare_bloc:
 	push $formatAfisare
 	call printf
 	add $16, %esp	
-	push $0
-	call fflush
-	add $4, %esp
 	ret
 
 
 
 et_exit:
+	push $0
+	call fflush
+	pop %eax
 	mov $1, %eax	
 	mov $0, %ebx
 	int $0x80
@@ -207,14 +203,7 @@ check_add:
 	inc %ecx
 	mov %ecx, adduriExecutate
 	call citire_id
-	#urmatoarele 3 linii sunt doar pentru a testa codul
-	mov idFisier, %eax
-	cmp $227, %eax
-	je test1
-revenire:
 	jmp citire_dimensiune
-test1:
-	jmp revenire
 citire_dimensiune:
 	push $dimensiuneFisier
 	push $formatCitire
@@ -297,9 +286,6 @@ afisare_add:
 	push $formatAfisare
 	call printf
 	add $16, %esp	
-	push $0
-	call fflush	
-	add $4, %esp
 	jmp check_add
 
 

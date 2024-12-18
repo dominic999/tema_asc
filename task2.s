@@ -192,6 +192,9 @@ main:
 	jmp inserare_zerouri
 
 et_exit:
+	push $0
+	call fflush 
+	pop %eax
 	mov $1, %eax
 	mov $0, %ebx
 	int $0x80
@@ -269,7 +272,15 @@ citire_id_add:
 	push $formatCitire
 	call scanf
 	add $8, %esp
+	mov idFisier, %eax
+	cmp $5, %eax
+	je test1
+revenire_test1:
 	jmp citire_dimensiune
+
+test1:
+	jmp revenire_test1
+
 
 citire_dimensiune:
 	mov $0, %ecx
@@ -297,6 +308,12 @@ rest:
 	mov %eax, dimensiuneFisier
 	mov $0, %ecx
 	mov $1, %eax
+	jmp verificare_dimensiune_valida
+
+verificare_dimensiune_valida:
+	mov $1024, %eax
+	cmp dimensiuneFisier, %eax
+	jl error
 	jmp cautare_zero
 	 
 
@@ -387,7 +404,8 @@ error:
 	mov numeComanda, %eax
 	cmp comandaGet, %eax
 	je verificare_numar_comenzi
-	jmp check_add
+	mov adduriExecutate, %ecx
+	jmp cont_check
 
 
 et_del:
